@@ -3,19 +3,12 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema({
-  firstName: {
+  name: {
     type: String,
     required: true,
     trim: true,
-    minLength: [2, 'First name must be at least 2 characters long'],
-    maxLength: [25, 'First name must be at most 25 characters long']
-  },
-  lastName: {
-    type: String,
-    required: true,
-    trim: true,
-    minLength: [2, 'Last name must be at least 2 characters long'],
-    maxLength: [25, 'Last name must be at most 25 characters long']
+    minLength: [2, 'Name must be at least 2 characters long'],
+    maxLength: [25, 'Name must be at most 25 characters long']
   },
   email: {
     type: String,
@@ -48,7 +41,11 @@ userSchema.methods.isValidPassword = async function (password) {
 }
 
 userSchema.methods.generateAuthToken = function () {
-  return jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET environment variable is not set');
+  }
+  return jwt.sign({ _id: this._id }, secret, {
     expiresIn: '24h'
   });
 };

@@ -6,7 +6,7 @@ import http from 'http';
 // Create an HTTP server
 const server = http.createServer(app);
 
-// Start the server
+
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
