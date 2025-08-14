@@ -5,6 +5,7 @@ import connectDB from './db/db.js';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import userRoutes from './routes/user.route.js';
+import analysisRoutes from './routes/analysis.js';
 const app = express();
 
 
@@ -27,6 +28,7 @@ app.use(cors());
 app.use(cookieParser());
 
 app.use("/users", userRoutes);
+app.use("/api/analysis", analysisRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World!');
