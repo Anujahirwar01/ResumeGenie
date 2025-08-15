@@ -1,6 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Eye, EyeOff, Mail, Lock, Zap, Github, Chrome, Apple } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowLeft, Eye, EyeOff, Mail, Lock, Zap, Github, Chrome, Apple, AlertCircle } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+
+// Move InputField outside the component to prevent re-creation on every render
+const InputField = ({ icon: Icon, type, name, placeholder, value, error, showToggle, onToggle, onChange, ...props }) => (
+  <div className="relative">
+    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <Icon className="h-5 w-5 text-gray-400" />
+    </div>
+    <input
+      type={type}
+      name={name}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      className={`w-full pl-10 pr-${showToggle ? '12' : '4'} py-3 bg-white/10 backdrop-blur-sm border ${
+        error ? 'border-red-400' : 'border-white/20'
+      } rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200`}
+      {...props}
+    />
+    {showToggle && (
+      <button
+        type="button"
+        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+        onClick={onToggle}
+      >
+        {type === 'password' ? (
+          <Eye className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
+        ) : (
+          <EyeOff className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
+        )}
+      </button>
+    )}
+    {error && (
+      <div className="absolute -bottom-6 left-0 flex items-center text-red-400 text-sm">
+        <AlertCircle className="w-4 h-4 mr-1" />
+        {error}
+      </div>
+    )}
+  </div>
+);
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +52,12 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Redirect path - either from protected route or default to landing page
+  const from = location.state?.from?.pathname || '/';
 
   useEffect(() => {
     document.body.style.margin = '0';
@@ -50,54 +97,65 @@ const Login = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    
+    // Debug: Log form state before validation
+    console.log('Current formData state:', formData);
+    console.log('Email value:', formData.email);
+    console.log('Password value:', formData.password);
+    
+    if (!validateForm()) {
+      console.log('Validation failed, current errors:', errors);
+      return;
+    }
     
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Login successful!');
-    }, 2000);
-  };
+    
+    // Debug: Log the form data being sent
+    console.log('Login data being sent:', {
+      email: formData.email,
+      password: formData.password
+    });
+    
+    try {
+      const response = await axios.post('http://localhost:5000/users/login', {
+        email: formData.email,
+        password: formData.password
+      });
 
-  const InputField = ({ icon: Icon, type, name, placeholder, value, error, showToggle, onToggle, ...props }) => (
-    <div className="relative">
-      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <Icon className="h-5 w-5 text-gray-400" />
-      </div>
-      <input
-        type={type}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={handleInputChange}
-        className={`w-full pl-10 pr-${showToggle ? '12' : '4'} py-3 bg-white/10 backdrop-blur-sm border ${
-          error ? 'border-red-400' : 'border-white/20'
-        } rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200`}
-        {...props}
-      />
-      {showToggle && (
-        <button
-          type="button"
-          className="absolute inset-y-0 right-0 pr-3 flex items-center"
-          onClick={onToggle}
-        >
-          {type === 'password' ? (
-            <Eye className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
-          ) : (
-            <EyeOff className="h-5 w-5 text-gray-400 hover:text-white transition-colors" />
-          )}
-        </button>
-      )}
-      {error && (
-        <div className="absolute -bottom-6 left-0 text-red-400 text-sm">
-          {error}
-        </div>
-      )}
-    </div>
-  );
+      // Success
+      console.log('Login successful:', response.data);
+      
+      // Use AuthContext to handle login
+      login(response.data.token, response.data.user);
+      
+      // Redirect to the intended page or dashboard
+      navigate(from, { replace: true });
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      
+      if (error.response && error.response.data) {
+        const data = error.response.data;
+        
+        if (data.errors) {
+          // Handle validation errors
+          const newErrors = {};
+          data.errors.forEach(error => {
+            newErrors[error.path] = error.msg;
+          });
+          setErrors(newErrors);
+        } else {
+          alert('Error: ' + (data.error || 'Login failed'));
+        }
+      } else {
+        alert('Network error. Please try again.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 m-0 p-0 flex items-center justify-center">
@@ -142,6 +200,7 @@ const Login = () => {
                 placeholder="Email Address"
                 value={formData.email}
                 error={errors.email}
+                onChange={handleInputChange}
                 required
               />
             </div>
@@ -156,6 +215,7 @@ const Login = () => {
                 error={errors.password}
                 showToggle
                 onToggle={() => setShowPassword(!showPassword)}
+                onChange={handleInputChange}
                 required
               />
             </div>

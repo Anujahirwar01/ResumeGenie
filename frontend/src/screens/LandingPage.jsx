@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Sparkles, FileText, User, Zap, CheckCircle, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ChevronRight, Sparkles, FileText, User, Zap, CheckCircle, ArrowRight, LogOut, Settings, Bell, Upload, Search, Target } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const LandingPage = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [jobTitle, setJobTitle] = useState('');
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
 
   // Remove default margins and padding from body
   useEffect(() => {
@@ -17,20 +23,20 @@ const LandingPage = () => {
   const demoSteps = [
     { 
       title: "Upload Resume", 
-      description: "AI analyzes your content",
+      description: "Upload your resume file",
       icon: FileText,
       color: "text-blue-500"
     },
     { 
-      title: "AI Suggestions", 
-      description: "Smart recommendations appear",
-      icon: Sparkles,
+      title: "ATS Analysis", 
+      description: "AI scans for compatibility",
+      icon: Target,
       color: "text-purple-500"
     },
     { 
-      title: "Portfolio Ready", 
-      description: "Professional portfolio generated",
-      icon: User,
+      title: "Get Results", 
+      description: "Receive detailed report",
+      icon: CheckCircle,
       color: "text-green-500"
     }
   ];
@@ -43,11 +49,71 @@ const LandingPage = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      navigate('/dashboard');
+    } else {
+      navigate('/register');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    // Stay on landing page after logout
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file && (file.type === 'application/pdf' || file.type === 'application/msword' || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+      setSelectedFile(file);
+    } else {
+      alert('Please select a PDF or Word document');
+    }
+  };
+
+  const handleResumeAnalysis = async () => {
+    if (!selectedFile) {
+      alert('Please select a resume file');
+      return;
+    }
+
+    setIsUploading(true);
+    
+    try {
+      // Simulate upload and analysis
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Store analysis data in localStorage for now (later you can send to backend)
+      const analysisData = {
+        fileName: selectedFile.name,
+        atsScore: Math.floor(Math.random() * 30) + 70, // Random score between 70-99
+        uploadDate: new Date().toISOString(),
+        suggestions: [
+          'Add more relevant keywords for the target role',
+          'Improve formatting for better ATS compatibility',
+          'Include quantifiable achievements',
+          'Optimize section headers'
+        ]
+      };
+      
+      localStorage.setItem('latestAnalysis', JSON.stringify(analysisData));
+      
+      // Navigate to dashboard to show results
+      navigate('/dashboard', { state: { newAnalysis: true } });
+      
+    } catch (error) {
+      console.error('Analysis error:', error);
+      alert('Analysis failed. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const features = [
-    "AI-powered resume optimization",
-    "Automatic portfolio generation",
-    "ATS-friendly formatting",
-    "Real-time suggestions"
+    "ATS compatibility analysis",
+    "Keyword optimization suggestions",  
+    "Resume formatting improvements",
+    "Real-time ATS scoring"
   ];
 
   return (
@@ -66,18 +132,48 @@ const LandingPage = () => {
             <Zap className="w-8 h-8 text-cyan-400" />
             <span className="text-white text-xl font-bold">ResumeGenie</span>
           </div>
-          <div className="flex space-x-4">
-            <Link to="/login">
-              <button className="text-gray-300 hover:text-white px-4 py-2 rounded-lg transition-colors duration-200">
-                Login
+          
+          {isAuthenticated ? (
+            // Profile in header for authenticated users
+            <div className="flex items-center space-x-4">
+              {/* <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20">
+                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-left">
+                  <p className="text-white text-sm font-semibold">{user?.name || 'User'}</p>
+                  <p className="text-gray-400 text-xs">{user?.email}</p>
+                </div>
+              </div> */}
+              <button 
+                onClick={handleGetStarted}
+                className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105"
+              >
+                Dashboard
               </button>
-            </Link>
-            <Link to="/register">
-              <button className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105">
-                Sign Up
-              </button>
-            </Link>
-          </div>
+              {/* <button
+                onClick={handleLogout}
+                className="flex items-center space-x-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 rounded-lg transition-all duration-200"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">Logout</span>
+              </button> */}
+            </div>
+          ) : (
+            // Login/Signup buttons for non-authenticated users
+            <div className="flex space-x-4">
+              <Link to="/login">
+                <button className="text-gray-300 hover:text-white px-4 py-2 rounded-lg transition-colors duration-200">
+                  Login
+                </button>
+              </Link>
+              <Link to="/register">
+                <button className="bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105">
+                  Sign Up
+                </button>
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* Hero Content */}
@@ -86,37 +182,134 @@ const LandingPage = () => {
             <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
               <div className="inline-flex items-center bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 mb-6 border border-white/20">
                 <Sparkles className="w-4 h-4 text-cyan-400 mr-2" />
-                <span className="text-cyan-400 text-sm font-medium">AI-Powered Career Tools</span>
+                <span className="text-cyan-400 text-sm font-medium">ATS Resume Checker</span>
               </div>
               
-              <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-                Optimize Your 
-                <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent"> Resume & Portfolio </span>
-                with AI
-              </h1>
-              
-              <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-                Transform your career documents with intelligent AI suggestions. Create stunning portfolios, optimize for ATS systems, and land your dream job faster.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <button className="group bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-cyan-500/25">
-                  Get Started
-                  <ArrowRight className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
-                </button>
-                {/* <button className="border-2 border-white/30 text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition-all duration-200 backdrop-blur-sm">
-                  Watch Demo
-                </button> */}
-              </div>
-
-              <div className="flex flex-wrap gap-6">
-                {features.map((feature, index) => (
-                  <div key={index} className="flex items-center text-gray-300">
-                    <CheckCircle className="w-5 h-5 text-green-400 mr-2" />
-                    <span className="text-sm">{feature}</span>
+              {isAuthenticated ? (
+                // Resume Upload Section for Authenticated Users
+                <div className="space-y-8">
+                  <div>
+                    <h1 className="text-4xl lg:text-6xl font-bold text-white mb-4 leading-tight">
+                      Ready to optimize your 
+                      <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent"> Resume</span>, {user?.name}?
+                    </h1>
+                    <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+                      Upload your resume and get instant ATS compatibility analysis with personalized suggestions.
+                    </p>
                   </div>
-                ))}
-              </div>
+
+                  {/* Resume Upload Card */}
+                  <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+                    <div className="flex items-center mb-6">
+                      <Target className="w-6 h-6 text-cyan-400 mr-3" />
+                      <h3 className="text-2xl font-bold text-white">ATS Resume Scanner</h3>
+                    </div>
+
+                    <div className="space-y-6">
+                      {/* File Upload */}
+                      <div>
+                        <label className="block text-white text-sm font-medium mb-2">
+                          Upload Resume *
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            id="resume-upload"
+                          />
+                          <label
+                            htmlFor="resume-upload"
+                            className="flex items-center justify-center w-full p-6 border-2 border-dashed border-white/30 rounded-xl cursor-pointer hover:border-cyan-400 hover:bg-white/5 transition-all duration-200"
+                          >
+                            <div className="text-center">
+                              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                              {selectedFile ? (
+                                <div>
+                                  <p className="text-cyan-400 font-medium">{selectedFile.name}</p>
+                                  <p className="text-gray-400 text-sm">Click to change file</p>
+                                </div>
+                              ) : (
+                                <div>
+                                  <p className="text-white font-medium">Click to upload resume</p>
+                                  <p className="text-gray-400 text-sm">PDF, DOC, or DOCX (Max 10MB)</p>
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Submit Button */}
+                      <button
+                        onClick={handleResumeAnalysis}
+                        disabled={!selectedFile || isUploading}
+                        className="w-full bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 disabled:from-gray-600 disabled:to-gray-700 text-white py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed shadow-2xl hover:shadow-cyan-500/25 flex items-center justify-center"
+                      >
+                        {isUploading ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                            Analyzing Resume...
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <Target className="w-5 h-5 mr-2" />
+                            Analyze Resume for ATS
+                          </div>
+                        )}
+                      </button>
+
+                      <div className="flex items-center justify-center space-x-4 text-sm text-gray-400">
+                        <div className="flex items-center">
+                          <CheckCircle className="w-4 h-4 text-green-400 mr-1" />
+                          <span>Secure Upload</span>
+                        </div>
+                        <div className="flex items-center">
+                          <CheckCircle className="w-4 h-4 text-green-400 mr-1" />
+                          <span>Instant Analysis</span>
+                        </div>
+                        <div className="flex items-center">
+                          <CheckCircle className="w-4 h-4 text-green-400 mr-1" />
+                          <span>Detailed Report</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Default Landing Page for Non-Authenticated Users
+                <div>
+                  <h1 className="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+                    Check Your Resume's 
+                    <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent"> ATS Compatibility </span>
+                    Instantly
+                  </h1>
+                  
+                  <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+                    Get instant feedback on how well your resume performs with Applicant Tracking Systems. Optimize your resume to pass ATS filters and land more interviews.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                    <button 
+                      onClick={handleGetStarted}
+                      className="group bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-cyan-500/25"
+                    >
+                      Get Started
+                      <ArrowRight className="inline-block ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-6">
+                    {features.map((feature, index) => (
+                      <div key={index} className="flex items-center text-gray-300">
+                        <CheckCircle className="w-5 h-5 text-green-400 mr-2" />
+                        <span className="text-sm">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Demo Animation */}
@@ -126,7 +319,7 @@ const LandingPage = () => {
                   <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 
-                <h3 className="text-white text-xl font-bold mb-6 text-center">AI Magic in Action</h3>
+                <h3 className="text-white text-xl font-bold mb-6 text-center">ATS Checker in Action</h3>
                 
                 <div className="space-y-6">
                   {demoSteps.map((step, index) => {
@@ -190,7 +383,7 @@ const LandingPage = () => {
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { number: "50K+", label: "Resumes Optimized" },
+              { number: "10K+", label: "Resumes Analyzed" },
               { number: "95%", label: "ATS Pass Rate" },
               { number: "3x", label: "More Interviews" }
             ].map((stat, index) => (
