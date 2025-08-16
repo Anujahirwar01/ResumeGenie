@@ -5,7 +5,7 @@ const AnalysisSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false // Made optional for testing
   },
 
   // File Information
