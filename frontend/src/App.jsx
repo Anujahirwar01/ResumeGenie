@@ -3,15 +3,18 @@ import React from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import AppRoutes from './routes/AppRoutes'
 import { AuthProvider } from './context/AuthContext'
+import { AnalysisProvider } from './context/AnalysisContext'
 
 function App() {
   
 
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
+      <AnalysisProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </AnalysisProvider>
     </AuthProvider>
   )
 }

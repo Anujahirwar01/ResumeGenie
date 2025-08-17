@@ -193,6 +193,232 @@ const ExpertAnalysisResults = ({ analysisData, resumeText = "" }) => {
         </div>
       </div>
 
+      {/* Main Resume Sections Analysis */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-6">
+        <div className="flex items-center mb-6">
+          <FileText className="w-6 h-6 text-blue-600 mr-3" />
+          <h2 className="text-xl font-semibold text-blue-800">📋 Essential Resume Sections</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Contact Information */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
+            <div className="flex items-center mb-3">
+              <Mail className="w-5 h-5 text-blue-600 mr-2" />
+              <h3 className="font-semibold text-gray-800">Contact Information</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center text-sm">
+                {/@/.test(resumeText) ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-green-700">Email found</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 text-red-500 mr-2" />
+                    <span className="text-red-700">Email missing</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center text-sm">
+                {/\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/.test(resumeText) ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-green-700">Phone found</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4 text-red-500 mr-2" />
+                    <span className="text-red-700">Phone missing</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center text-sm">
+                {/(address|location|city|state)/i.test(resumeText) ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-green-700">Location found</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-4 h-4 text-yellow-500 mr-2" />
+                    <span className="text-yellow-700">Location recommended</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Professional Summary */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
+            <div className="flex items-center mb-3">
+              <User className="w-5 h-5 text-purple-600 mr-2" />
+              <h3 className="font-semibold text-gray-800">Professional Summary</h3>
+            </div>
+            <div className="space-y-2">
+              {/(summary|objective|profile|about)/i.test(resumeText) && resumeText.length > 200 ? (
+                <>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-green-700">Summary present</span>
+                  </div>
+                  <p className="text-xs text-gray-600">Well-structured professional summary found</p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center text-sm">
+                    <XCircle className="w-4 h-4 text-red-500 mr-2" />
+                    <span className="text-red-700">Summary missing/weak</span>
+                  </div>
+                  <p className="text-xs text-gray-600">Add a compelling 2-3 sentence summary</p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Skills */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
+            <div className="flex items-center mb-3">
+              <Target className="w-5 h-5 text-green-600 mr-2" />
+              <h3 className="font-semibold text-gray-800">Skills</h3>
+            </div>
+            <div className="space-y-2">
+              {/(skills|technologies|competencies|proficiencies)/i.test(resumeText) ? (
+                <>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-green-700">Skills section found</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    Technical and soft skills analysis complete
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center text-sm">
+                    <XCircle className="w-4 h-4 text-red-500 mr-2" />
+                    <span className="text-red-700">Skills section missing</span>
+                  </div>
+                  <p className="text-xs text-gray-600">Add technical and soft skills relevant to your field</p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Work Experience */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
+            <div className="flex items-center mb-3">
+              <Briefcase className="w-5 h-5 text-orange-600 mr-2" />
+              <h3 className="font-semibold text-gray-800">Work Experience</h3>
+            </div>
+            <div className="space-y-2">
+              {/(experience|employment|work|career|professional|job)/i.test(resumeText) ? (
+                <>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-green-700">Experience section found</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {(resumeText.match(/\d{4}/g) || []).length} years/dates mentioned
+                  </p>
+                  {!/\d+%|\$\d+|\d+,\d+|\d+ (million|thousand|k\b)/i.test(resumeText) && (
+                    <p className="text-xs text-yellow-600">💡 Add quantifiable achievements</p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center text-sm">
+                    <XCircle className="w-4 h-4 text-red-500 mr-2" />
+                    <span className="text-red-700">Experience section missing</span>
+                  </div>
+                  <p className="text-xs text-gray-600">Add work history with achievements and dates</p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Education */}
+          <div className="bg-white rounded-lg p-4 border border-blue-100 shadow-sm">
+            <div className="flex items-center mb-3">
+              <GraduationCap className="w-5 h-5 text-indigo-600 mr-2" />
+              <h3 className="font-semibold text-gray-800">Education</h3>
+            </div>
+            <div className="space-y-2">
+              {/(education|degree|university|college|school|bachelor|master|phd|certification|diploma)/i.test(resumeText) ? (
+                <>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span className="text-green-700">Education found</span>
+                  </div>
+                  <p className="text-xs text-gray-600">
+                    {((resumeText.match(/\b(bachelor|master|phd|doctorate|associate|certificate|diploma|degree)\b/gi) || []).length)} qualification(s) detected
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center text-sm">
+                    <AlertTriangle className="w-4 h-4 text-yellow-500 mr-2" />
+                    <span className="text-yellow-700">Education section missing</span>
+                  </div>
+                  <p className="text-xs text-gray-600">Add relevant education and certifications</p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Section Completeness Summary */}
+        <div className="mt-6 p-4 bg-white rounded-lg border border-blue-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <Award className="w-5 h-5 text-blue-600 mr-2" />
+              <span className="font-semibold text-gray-800">Section Completeness</span>
+            </div>
+            <div className="text-2xl font-bold text-blue-600">
+              {[
+                /@/.test(resumeText),
+                /(summary|objective|profile|about)/i.test(resumeText) && resumeText.length > 200,
+                /(skills|technologies|competencies)/i.test(resumeText),
+                /(experience|employment|work|career)/i.test(resumeText),
+                /(education|degree|university|college)/i.test(resumeText)
+              ].filter(Boolean).length}/5
+            </div>
+          </div>
+          <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${([
+                  /@/.test(resumeText),
+                  /(summary|objective|profile|about)/i.test(resumeText) && resumeText.length > 200,
+                  /(skills|technologies|competencies)/i.test(resumeText),
+                  /(experience|employment|work|career)/i.test(resumeText),
+                  /(education|degree|university|college)/i.test(resumeText)
+                ].filter(Boolean).length / 5) * 100}%` 
+              }}
+            ></div>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            {[
+              /@/.test(resumeText),
+              /(summary|objective|profile|about)/i.test(resumeText) && resumeText.length > 200,
+              /(skills|technologies|competencies)/i.test(resumeText),
+              /(experience|employment|work|career)/i.test(resumeText),
+              /(education|degree|university|college)/i.test(resumeText)
+            ].filter(Boolean).length === 5 
+              ? "🎉 All essential sections present!" 
+              : `Complete ${5 - [
+                  /@/.test(resumeText),
+                  /(summary|objective|profile|about)/i.test(resumeText) && resumeText.length > 200,
+                  /(skills|technologies|competencies)/i.test(resumeText),
+                  /(experience|employment|work|career)/i.test(resumeText),
+                  /(education|degree|university|college)/i.test(resumeText)
+                ].filter(Boolean).length} more section(s) for a stronger resume`
+            }
+          </p>
+        </div>
+      </div>
+
       {/* Resume Issues - Highlighted Problems */}
       {resumeIssues.length > 0 && (
         <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
