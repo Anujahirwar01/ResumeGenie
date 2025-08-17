@@ -330,9 +330,70 @@ router.get('/:id', protect, async (req, res) => {
       });
     }
 
+    // Transform the data to match the frontend expected format
+    const transformedData = {
+      // Basic analysis info
+      analysisId: analysis._id,
+      overallScore: analysis.atsScore,
+      grade: analysis.atsScore >= 90 ? 'A' : 
+             analysis.atsScore >= 80 ? 'B' : 
+             analysis.atsScore >= 70 ? 'C' : 
+             analysis.atsScore >= 60 ? 'D' : 'F',
+      status: analysis.status,
+      fileName: analysis.fileName,
+      createdAt: analysis.createdAt,
+      
+      // Enhanced analysis results (mock structure if not available)
+      scores: {
+        structureFormatting: analysis.categories?.formatting?.score || 50,
+        contentQuality: analysis.categories?.content?.score || 50,
+        atsOptimization: analysis.categories?.keywords?.score || 50,
+        overallImpact: analysis.categories?.structure?.score || 50
+      },
+      
+      expertReview: {
+        summary: `This resume has been analyzed with an ATS score of ${Math.round(analysis.atsScore)}%. The analysis was completed on ${new Date(analysis.createdAt).toLocaleDateString()}.`,
+        topStrengths: [
+          "Professional formatting and structure",
+          "Clear section organization",
+          "Appropriate file format for ATS systems"
+        ],
+        topWeaknesses: analysis.suggestions?.slice(0, 3).map(s => s.description) || [
+          "Could benefit from more quantifiable achievements",
+          "Consider adding more relevant keywords",
+          "Improve content depth in experience section"
+        ],
+        actionableImprovements: analysis.suggestions?.map(s => s.description) || [
+          "Add more specific metrics and achievements",
+          "Include industry-relevant keywords",
+          "Enhance professional summary section",
+          "Optimize formatting for better ATS parsing"
+        ],
+        rewrittenBullets: []
+      },
+      
+      // Structured data (if available from original analysis)
+      structuredData: analysis.structuredData || null,
+      extractedText: analysis.extractedText || '',
+      
+      // Category scores
+      categoryScores: {
+        keywords: analysis.categories?.keywords?.score || 0,
+        formatting: analysis.categories?.formatting?.score || 0,
+        content: analysis.categories?.content?.score || 0,
+        structure: analysis.categories?.structure?.score || 0
+      },
+      
+      // Additional analysis data
+      atsCompatibility: analysis.atsCompatibility,
+      suggestions: analysis.suggestions,
+      keywords: analysis.keywords,
+      sectionFeedback: analysis.sectionFeedback || {}
+    };
+
     res.json({
       success: true,
-      data: analysis
+      data: transformedData
     });
 
   } catch (error) {
@@ -376,6 +437,133 @@ router.delete('/:id', protect, async (req, res) => {
     });
   }
 });
+
+/**
+ * @route   GET /api/analysis/stats/dashboard
+ * @desc    Get user's dashboard statistics
+ * @access  Private
+ */
+router.get('/stats/dashboard', protect, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    // Get basic counts and averages
+    const stats = await Analysis.aggregate([
+      { $match: { userId: userId } },
+      {
+        $group: {
+          _id: null,
+          totalAnalyses: { $sum: 1 },
+          averageScore: { $avg: '$atsScore' },
+          totalKeywords: { $sum: { $ifNull: ['$categories.keywords.foundKeywords', 0] } },
+          totalReports: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get recent analyses for activity feed
+    const recentAnalyses = await Analysis.find({ userId: userId })
+      .select('fileName atsScore createdAt jobTitle categories')
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    // Calculate changes compared to previous period
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const previousStats = await Analysis.aggregate([
+      { $match: { userId: userId, createdAt: { $lt: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: null,
+          totalAnalyses: { $sum: 1 },
+          averageScore: { $avg: '$atsScore' }
+        }
+      }
+    ]);
+
+    const currentStats = stats[0] || {
+      totalAnalyses: 0,
+      averageScore: 0,
+      totalKeywords: 0,
+      totalReports: 0
+    };
+
+    const prevStats = previousStats[0] || {
+      totalAnalyses: 0,
+      averageScore: 0
+    };
+
+    // Calculate changes
+    const analysesChange = currentStats.totalAnalyses - prevStats.totalAnalyses;
+    const scoreChange = Math.round((currentStats.averageScore || 0) - (prevStats.averageScore || 0));
+
+    // Transform recent analyses to activity format
+    const recentActivities = recentAnalyses.map((analysis, index) => ({
+      id: analysis._id,
+      type: 'analysis',
+      title: `Resume analyzed successfully`,
+      description: `${analysis.fileName} - ATS Score: ${Math.round(analysis.atsScore)}%`,
+      time: getTimeAgo(analysis.createdAt),
+      icon: 'FileText',
+      status: 'success'
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        stats: {
+          resumesAnalyzed: {
+            value: currentStats.totalAnalyses.toString(),
+            change: analysesChange > 0 ? `+${analysesChange}` : analysesChange.toString(),
+            icon: 'FileText',
+            color: 'bg-blue-500'
+          },
+          averageScore: {
+            value: `${Math.round(currentStats.averageScore || 0)}%`,
+            change: scoreChange > 0 ? `+${scoreChange}%` : `${scoreChange}%`,
+            icon: 'Target',
+            color: 'bg-green-500'
+          },
+          keywordsFound: {
+            value: currentStats.totalKeywords.toString(),
+            change: '+0', // Could calculate if needed
+            icon: 'Search',
+            color: 'bg-purple-500'
+          },
+          reportsGenerated: {
+            value: currentStats.totalReports.toString(),
+            change: analysesChange > 0 ? `+${analysesChange}` : analysesChange.toString(),
+            icon: 'BookmarkCheck',
+            color: 'bg-orange-500'
+          }
+        },
+        recentActivities
+      }
+    });
+
+  } catch (error) {
+    console.error('Get dashboard stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard statistics'
+    });
+  }
+});
+
+// Helper function to calculate time ago
+function getTimeAgo(date) {
+  const now = new Date();
+  const diff = now - new Date(date);
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const days = Math.floor(hours / 24);
+  
+  if (days > 0) {
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  } else if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  } else {
+    return 'Just now';
+  }
+}
 
 /**
  * @route   GET /api/analysis/stats/overview
