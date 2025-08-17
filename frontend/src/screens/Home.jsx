@@ -46,12 +46,17 @@ const Dashboard = () => {
   const [showAnalysisResults, setShowAnalysisResults] = useState(false);
   const [analysisHistory, setAnalysisHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
   // Fetch analysis history
   const fetchAnalysisHistory = async () => {
+    // Only fetch history if user is authenticated
+    if (!isAuthenticated) {
+      return;
+    }
+    
     try {
       setLoadingHistory(true);
       const token = localStorage.getItem('token');
@@ -95,10 +100,10 @@ const Dashboard = () => {
 
   // Fetch history when reports tab is activated or when a new analysis is completed
   useEffect(() => {
-    if (activeTab === 'reports') {
+    if (activeTab === 'reports' && isAuthenticated) {
       fetchAnalysisHistory();
     }
-  }, [activeTab, currentAnalysis]); // Add currentAnalysis as dependency to refresh history when new analysis is added
+  }, [activeTab, currentAnalysis, isAuthenticated]); // Add isAuthenticated as dependency
 
   const handleLogout = () => {
     logout();

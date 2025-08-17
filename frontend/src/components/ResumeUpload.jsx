@@ -110,14 +110,20 @@ const ResumeUpload = ({ onAnalysisComplete }) => {
 
       const token = localStorage.getItem('token');
       
+      const headers = {
+        'Content-Type': 'multipart/form-data'
+      };
+      
+      // Add authorization header only if token exists
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await axios.post(
         'http://localhost:5000/api/analysis/upload',
         formData,
         {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`
-          }
+          headers
         }
       );
 

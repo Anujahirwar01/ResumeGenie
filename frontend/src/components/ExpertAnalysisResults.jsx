@@ -427,8 +427,9 @@ const ExpertAnalysisResults = ({ analysisData, resumeText = "" }) => {
           )}
         </div>
       )}
-        {/* Missing Elements */}
-        {missingAnalysis.missing.length > 0 && (
+
+      {/* Missing Elements */}
+      {missingAnalysis.missing.length > 0 && (
           <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
             <div className="flex items-center mb-4">
               <XCircle className="w-6 h-6 text-red-600 mr-3" />
@@ -479,6 +480,7 @@ const ExpertAnalysisResults = ({ analysisData, resumeText = "" }) => {
           </div>
         )}
       </div>
+  )
 
       {/* Expert Summary */}
       <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
@@ -537,9 +539,6 @@ const ExpertAnalysisResults = ({ analysisData, resumeText = "" }) => {
           <p className="text-sm text-gray-600">Market relevance and appeal</p>
         </div>
       </div>
-
-      {/* Strengths and Weaknesses */}
-            )}
 
       {/* Missing Elements Analysis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -638,8 +637,6 @@ const ExpertAnalysisResults = ({ analysisData, resumeText = "" }) => {
           </div>
         </div>
       )}
-    </div>
-  );
-};
+    }
 
 export default ExpertAnalysisResults;
