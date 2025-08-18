@@ -29,6 +29,174 @@ const upload = multer({
 });
 
 /**
+ * @route   POST /api/analysis/upload-with-progress
+ * @desc    Upload and analyze resume with real-time progress
+ * @access  Public (temporarily for testing)
+ */
+router.post('/upload-with-progress', upload.single('resume'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+
+    // Set up Server-Sent Events for real-time progress
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    // Progress callback function
+    const sendProgress = (progressData) => {
+      res.write(`data: ${JSON.stringify(progressData)}\n\n`);
+    };
+
+    try {
+      // Get analysis parameters from request
+      const { jobIndustry = 'technology', jobLevel = 'mid', jobTitle } = req.body;
+
+      // Step 1: Extract text from uploaded file with progress
+      sendProgress({ stage: 'starting', message: 'Starting file processing...', progress: 0 });
+      
+      const extractionResult = await fileProcessor.extractText(req.file, sendProgress);
+      
+      // Step 2: Perform ATS analysis with progress
+      sendProgress({ stage: 'analyzing', message: 'Performing ATS analysis...', progress: 85 });
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const analysisResult = await atsAnalysisEngine.analyzeResume(
+        extractionResult.text,
+        extractionResult.structured,
+        jobIndustry,
+        jobLevel
+      );
+
+      sendProgress({ stage: 'saving', message: 'Saving analysis results...', progress: 95 });
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Step 3: Save analysis to database
+      const getFileTypeFromMime = (mimetype) => {
+        const mimeMap = {
+          'application/pdf': 'pdf',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+          'application/msword': 'doc',
+          'text/plain': 'txt'
+        };
+        return mimeMap[mimetype] || 'txt';
+      };
+
+      const analysis = new Analysis({
+        userId: req.user?._id || null,
+        fileName: extractionResult.metadata.filename,
+        fileSize: extractionResult.metadata.size,
+        fileType: getFileTypeFromMime(extractionResult.metadata.type),
+        filePath: req.file.path || req.file.filename || `uploads/${extractionResult.metadata.filename}`,
+        atsScore: analysisResult.overallScore,
+        categories: {
+          keywords: {
+            score: analysisResult.scores?.atsOptimization || 50,
+            totalKeywords: 10,
+            foundKeywords: 5,
+            keywordDensity: 2.5
+          },
+          formatting: {
+            score: analysisResult.scores?.structureFormatting || 50,
+            issues: [],
+            passedChecks: ['Clean formatting', 'Standard sections']
+          },
+          content: {
+            score: analysisResult.scores?.contentQuality || 50,
+            wordCount: extractionResult.text.split(' ').length,
+            sectionsFound: (extractionResult.structured.sections || []).map(section => ({
+              name: section.type || section.title || 'Unknown',
+              found: true
+            }))
+          },
+          structure: {
+            score: analysisResult.scores?.structureFormatting || 50,
+            organization: 'good',
+            flow: 'good', 
+            readability: 'good'
+          },
+          experience: {
+            score: analysisResult.scores?.experience || 50,
+            yearsCalculated: extractionResult.structured.experience?.length || 0,
+            jobCount: extractionResult.structured.experience?.length || 0
+          }
+        },
+        extractedText: extractionResult.text,
+        structuredData: extractionResult.structured,
+        recommendations: analysisResult.recommendations || [],
+        improvements: analysisResult.improvements || [],
+        analysisDetails: {
+          industryMatch: analysisResult.industryMatch || 'General',
+          levelMatch: analysisResult.levelMatch || jobLevel,
+          keywords: analysisResult.keywords || [],
+          missingKeywords: analysisResult.missingKeywords || [],
+          strengthAreas: analysisResult.strengthAreas || [],
+          improvementAreas: analysisResult.improvementAreas || []
+        }
+      });
+
+      await analysis.save();
+
+      // Send completion with results
+      sendProgress({ 
+        stage: 'complete', 
+        message: 'Analysis complete!', 
+        progress: 100,
+        result: {
+          success: true,
+          analysisId: analysis._id,
+          data: {
+            overallScore: analysisResult.overallScore,
+            scores: analysisResult.scores,
+            recommendations: analysisResult.recommendations,
+            improvements: analysisResult.improvements,
+            extractedInfo: {
+              name: extractionResult.structured.personalInfo?.name,
+              email: extractionResult.structured.email,
+              phone: extractionResult.structured.phone,
+              location: extractionResult.structured.location,
+              skillsCount: extractionResult.structured.skills?.length || 0,
+              experienceCount: extractionResult.structured.experience?.length || 0,
+              educationCount: extractionResult.structured.education?.length || 0
+            }
+          }
+        }
+      });
+
+    } catch (processingError) {
+      console.error('Processing error:', processingError);
+      sendProgress({ 
+        stage: 'error', 
+        message: processingError.message || 'Processing failed', 
+        progress: 0,
+        error: true
+      });
+    }
+
+    // Close the connection
+    setTimeout(() => {
+      res.end();
+    }, 1000);
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to process file',
+      error: error.message
+    });
+  }
+});
+
+/**
  * @route   POST /api/analysis/upload
  * @desc    Upload and analyze resume
  * @access  Public (temporarily for testing)
