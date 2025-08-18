@@ -11,6 +11,11 @@ const ResumeUpload = ({ onAnalysisComplete }) => {
   const [success, setSuccess] = useState('');
   const [analysisData, setAnalysisData] = useState(null);
   
+  // Progress tracking states
+  const [progress, setProgress] = useState(0);
+  const [currentStage, setCurrentStage] = useState('');
+  const [progressMessage, setProgressMessage] = useState('');
+  
   // Form data for analysis parameters
   const [jobIndustry, setJobIndustry] = useState('technology');
   const [jobLevel, setJobLevel] = useState('mid');
@@ -100,6 +105,9 @@ const ResumeUpload = ({ onAnalysisComplete }) => {
     setUploading(true);
     setError('');
     setSuccess('');
+    setProgress(0);
+    setCurrentStage('starting');
+    setProgressMessage('Preparing file upload...');
 
     try {
       const formData = new FormData();
@@ -109,43 +117,79 @@ const ResumeUpload = ({ onAnalysisComplete }) => {
       formData.append('jobTitle', jobTitle);
 
       const token = localStorage.getItem('token');
-      
-      const headers = {
-        'Content-Type': 'multipart/form-data'
-      };
-      
-      // Add authorization header only if token exists
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await axios.post(
-        'http://localhost:5000/api/analysis/upload',
-        formData,
-        {
-          headers
-        }
-      );
 
-      if (response.data.success) {
-        setSuccess('Resume analyzed successfully!');
-        setAnalysisData(response.data.data);
+      // Use fetch for Server-Sent Events
+      const response = await fetch('http://localhost:5000/api/analysis/upload-with-progress', {
+        method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
         
-        // Notify parent component
-        if (onAnalysisComplete) {
-          onAnalysisComplete(response.data.data);
-        }
+        if (done) break;
 
-        // Reset form
-        setFile(null);
-        setJobTitle('');
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              // Update progress states
+              setProgress(data.progress || 0);
+              setCurrentStage(data.stage || '');
+              setProgressMessage(data.message || '');
+
+              // Handle completion
+              if (data.stage === 'complete' && data.result) {
+                setSuccess('Resume analyzed successfully!');
+                setAnalysisData(data.result.data);
+                
+                // Notify parent component
+                if (onAnalysisComplete) {
+                  onAnalysisComplete(data.result.data);
+                }
+
+                // Reset form
+                setFile(null);
+                setJobTitle('');
+                setProgress(100);
+                setProgressMessage('Analysis complete!');
+              }
+
+              // Handle errors
+              if (data.error || data.stage === 'error') {
+                setError(data.message || 'Processing failed');
+                setProgress(0);
+                break;
+              }
+
+            } catch (parseError) {
+              console.warn('Failed to parse progress data:', parseError);
+            }
+          }
+        }
       }
+
     } catch (error) {
       console.error('Upload error:', error);
       setError(
-        error.response?.data?.message || 
-        'Failed to analyze resume. Please try again.'
+        error.message || 'Failed to analyze resume. Please try again.'
       );
+      setProgress(0);
+      setProgressMessage('');
     } finally {
       setUploading(false);
     }
@@ -292,6 +336,101 @@ const ResumeUpload = ({ onAnalysisComplete }) => {
         <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md flex items-center">
           <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
           <span className="text-green-700">{success}</span>
+        </div>
+      )}
+
+      {/* Progress Indicator */}
+      {uploading && (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <Loader className="w-5 h-5 text-blue-600 mr-2 animate-spin" />
+              <span className="text-sm font-medium text-blue-800">
+                {progressMessage || 'Processing...'}
+              </span>
+            </div>
+            <span className="text-sm font-medium text-blue-600">
+              {progress}%
+            </span>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-blue-200 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${progress}%` }}
+            ></div>
+          </div>
+          
+          {/* Stage Indicator with Enhanced Messages */}
+          <div className="mt-4 space-y-3">
+            {/* Please Wait Stage */}
+            <div className={`flex items-center space-x-3 ${
+              currentStage === 'starting' || currentStage === 'validating' || !currentStage ? 'text-blue-600' : 'text-gray-400'
+            }`}>
+              {currentStage === 'starting' || currentStage === 'validating' || !currentStage ? 
+                <Loader className="w-5 h-5 animate-spin" /> : 
+                <CheckCircle className="w-5 h-5" />
+              }
+              <span className="text-sm font-medium">Please wait...</span>
+            </div>
+
+            {/* Loading Resume Stage */}
+            <div className={`flex items-center space-x-3 ${
+              currentStage === 'reading' ? 'text-blue-600' : currentStage === 'starting' || currentStage === 'validating' || !currentStage ? 'text-gray-400' : 'text-green-600'
+            }`}>
+              {currentStage === 'reading' ? 
+                <Loader className="w-5 h-5 animate-spin" /> : 
+                (currentStage === 'starting' || currentStage === 'validating' || !currentStage ? 
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div> :
+                  <CheckCircle className="w-5 h-5" />)
+              }
+              <span className="text-sm font-medium">Loading your resume...</span>
+            </div>
+
+            {/* Parsing Resume Stage */}
+            <div className={`flex items-center space-x-3 ${
+              currentStage === 'parsing' || currentStage === 'extracting' ? 'text-blue-600' : 
+              (currentStage === 'processing' || currentStage === 'analyzing' || currentStage === 'structuring' || currentStage === 'finalizing' || currentStage === 'complete') ? 'text-green-600' : 'text-gray-400'
+            }`}>
+              {currentStage === 'parsing' || currentStage === 'extracting' ? 
+                <Loader className="w-5 h-5 animate-spin" /> : 
+                ((currentStage === 'processing' || currentStage === 'analyzing' || currentStage === 'structuring' || currentStage === 'finalizing' || currentStage === 'complete') ? 
+                  <CheckCircle className="w-5 h-5" /> :
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div>)
+              }
+              <span className="text-sm font-medium">Parsing your resume...</span>
+            </div>
+
+            {/* Identifying Core Sections Stage */}
+            <div className={`flex items-center space-x-3 ${
+              currentStage === 'analyzing' || currentStage === 'structuring' ? 'text-blue-600' : 
+              (currentStage === 'finalizing' || currentStage === 'complete') ? 'text-green-600' : 'text-gray-400'
+            }`}>
+              {currentStage === 'analyzing' || currentStage === 'structuring' ? 
+                <Loader className="w-5 h-5 animate-spin" /> : 
+                ((currentStage === 'finalizing' || currentStage === 'complete') ? 
+                  <CheckCircle className="w-5 h-5" /> :
+                  <div className="w-5 h-5 rounded-full border-2 border-gray-300"></div>)
+              }
+              <span className="text-sm font-medium">Identifying core sections...</span>
+            </div>
+
+            {/* Additional stages can be added here */}
+            {(currentStage === 'finalizing' || currentStage === 'complete') && (
+              <div className={`flex items-center space-x-3 ${
+                currentStage === 'complete' ? 'text-green-600' : 'text-blue-600'
+              }`}>
+                {currentStage === 'complete' ? 
+                  <CheckCircle className="w-5 h-5" /> : 
+                  <Loader className="w-5 h-5 animate-spin" />
+                }
+                <span className="text-sm font-medium">
+                  {currentStage === 'complete' ? 'Analysis complete!' : 'Finalizing analysis...'}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
