@@ -440,78 +440,31 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Recent Activity Section */}
+              {/* Welcome Section */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
                 <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50">
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                      📊 Recent Analysis History
-                      <span className="ml-3 px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                        {recentActivities.length} resumes
-                      </span>
+                      🚀 Ready to Analyze Your Resume?
                     </h3>
-                    {recentActivities.length > 0 && (
-                      <button
-                        onClick={() => setActiveTab('reports')}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                      >
-                        View All →
-                      </button>
-                    )}
                   </div>
                 </div>
                 <div className="p-6">
-                  {recentActivities.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <FileText className="w-10 h-10 text-blue-600" />
-                      </div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">Start Your Journey</h4>
-                      <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-                        Upload your first resume to begin tracking your ATS optimization progress.
-                      </p>
-                      <button
-                        onClick={() => setActiveTab('upload')}
-                        className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg font-medium"
-                      >
-                        🚀 Upload First Resume
-                      </button>
+                  <div className="text-center py-12">
+                    <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <FileText className="w-10 h-10 text-blue-600" />
                     </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {(recentActivities && Array.isArray(recentActivities) ? recentActivities : []).slice(0, 5).map((activity, index) => (
-                        <div 
-                          key={index} 
-                          className="group flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 cursor-pointer transition-all duration-200" 
-                          onClick={() => handleAnalysisClick(activity)}
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-                              <FileText className="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-gray-900 group-hover:text-blue-900">
-                                {activity.filename}
-                              </p>
-                              <p className="text-sm text-gray-500 flex items-center">
-                                <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                {new Date(activity.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-4">
-                            <div className="text-right">
-                              <p className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
-                                {activity.overallScore}%
-                              </p>
-                              <p className="text-sm text-gray-500 font-medium">ATS Score</p>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                    <h4 className="text-lg font-semibold text-gray-900 mb-2">Optimize Your Resume for ATS</h4>
+                    <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                      Upload your resume to get instant analysis and personalized recommendations.
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('upload')}
+                      className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105 shadow-lg font-medium"
+                    >
+                      🚀 Upload Resume
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -546,53 +499,17 @@ const Dashboard = () => {
                   <p className="text-gray-600 mt-1">Track your resume improvement journey</p>
                 </div>
                 <div className="p-6">
-                  {loadingHistory ? (
-                    <div className="text-center py-12">
-                      <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-                      <p className="text-gray-500">Loading your reports...</p>
-                    </div>
-                  ) : (!analysisHistory || !Array.isArray(analysisHistory) || analysisHistory.length === 0) ? (
-                    <div className="text-center py-12">
-                      <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                      <h4 className="text-xl font-semibold text-gray-600 mb-2">No Reports Yet</h4>
-                      <p className="text-gray-500 mb-6">Upload a resume to start building your analysis history.</p>
-                      <button
-                        onClick={() => setActiveTab('upload')}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                      >
-                        Upload Resume
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {analysisHistory.map((analysis, index) => (
-                        <div 
-                          key={index} 
-                          className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                          onClick={() => handleAnalysisClick(analysis)}
-                        >
-                          <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                              <FileText className="w-5 h-5 text-blue-600" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{analysis.filename}</p>
-                              <p className="text-sm text-gray-500">
-                                {new Date(analysis.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-4">
-                            <div className="text-right">
-                              <p className="text-lg font-semibold text-gray-900">{analysis.overallScore}%</p>
-                              <p className="text-sm text-gray-500">ATS Score</p>
-                            </div>
-                            <ChevronRight className="w-5 h-5 text-gray-400" />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <div className="text-center py-12">
+                    <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h4 className="text-xl font-semibold text-gray-600 mb-2">Analysis History Not Available</h4>
+                    <p className="text-gray-500 mb-6">Focus on improving your current resume with real-time analysis.</p>
+                    <button
+                      onClick={() => setActiveTab('upload')}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Upload Resume
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -601,12 +518,7 @@ const Dashboard = () => {
           {/* Analysis Results Tab */}
           {activeTab === 'analysis' && (
             <div className="space-y-6">
-              {selectedAnalysisData ? (
-                <ExpertAnalysisResults 
-                  analysisData={selectedAnalysisData}
-                  onBack={() => setActiveTab('reports')}
-                />
-              ) : currentAnalysis ? (
+              {currentAnalysis ? (
                 <ExpertAnalysisResults 
                   analysisData={currentAnalysis}
                   onBack={() => setActiveTab('upload')}
@@ -614,22 +526,14 @@ const Dashboard = () => {
               ) : (
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No Analysis Selected</h3>
-                  <p className="text-gray-500 mb-6">Upload a resume or select an analysis to view results.</p>
-                  <div className="space-x-4">
-                    <button
-                      onClick={() => setActiveTab('upload')}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Upload Resume
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('reports')}
-                      className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      View Reports
-                    </button>
-                  </div>
+                  <h3 className="text-xl font-semibold text-gray-600 mb-2">No Analysis Available</h3>
+                  <p className="text-gray-500 mb-6">Upload a resume to view analysis results.</p>
+                  <button
+                    onClick={() => setActiveTab('upload')}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Upload Resume
+                  </button>
                 </div>
               )}
             </div>

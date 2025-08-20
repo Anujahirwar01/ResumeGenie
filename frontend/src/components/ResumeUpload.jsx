@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, Loader, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
@@ -20,6 +20,8 @@ const ResumeUpload = ({ onAnalysisComplete }) => {
   const [jobIndustry, setJobIndustry] = useState('technology');
   const [jobLevel, setJobLevel] = useState('mid');
   const [jobTitle, setJobTitle] = useState('');
+  const [customJobTitle, setCustomJobTitle] = useState('');
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
   const { user } = useAuth();
 
@@ -89,6 +91,196 @@ const ResumeUpload = ({ onAnalysisComplete }) => {
     }
 
     setFile(selectedFile);
+  };
+
+  // Job title suggestions based on industry
+  const getJobTitleSuggestions = (industry) => {
+    const titlesByIndustry = {
+      technology: [
+        'Software Engineer',
+        'Frontend Developer',
+        'Backend Developer',
+        'Full Stack Developer',
+        'DevOps Engineer',
+        'Data Scientist',
+        'Product Manager',
+        'UI/UX Designer',
+        'Mobile Developer',
+        'Cloud Engineer',
+        'Machine Learning Engineer',
+        'Cybersecurity Analyst'
+      ],
+      finance: [
+        'Financial Analyst',
+        'Investment Banker',
+        'Accountant',
+        'Risk Manager',
+        'Portfolio Manager',
+        'Financial Advisor',
+        'Credit Analyst',
+        'Compliance Officer',
+        'Treasury Analyst',
+        'Auditor',
+        'Financial Planner',
+        'Quantitative Analyst'
+      ],
+      healthcare: [
+        'Registered Nurse',
+        'Medical Assistant',
+        'Healthcare Administrator',
+        'Physical Therapist',
+        'Medical Technologist',
+        'Health Information Manager',
+        'Clinical Research Coordinator',
+        'Healthcare Data Analyst',
+        'Medical Coder',
+        'Pharmacist',
+        'Radiologic Technologist',
+        'Healthcare Consultant'
+      ],
+      marketing: [
+        'Digital Marketing Manager',
+        'Content Marketing Specialist',
+        'SEO Specialist',
+        'Social Media Manager',
+        'Marketing Analyst',
+        'Brand Manager',
+        'Email Marketing Specialist',
+        'Marketing Coordinator',
+        'Growth Marketing Manager',
+        'PPC Specialist',
+        'Marketing Director',
+        'Campaign Manager'
+      ],
+      sales: [
+        'Sales Representative',
+        'Account Manager',
+        'Sales Manager',
+        'Business Development Representative',
+        'Inside Sales Representative',
+        'Sales Director',
+        'Customer Success Manager',
+        'Territory Sales Manager',
+        'Key Account Manager',
+        'Sales Engineer',
+        'Regional Sales Manager',
+        'Sales Coordinator'
+      ],
+      education: [
+        'Teacher',
+        'Principal',
+        'Academic Advisor',
+        'Curriculum Developer',
+        'Instructional Designer',
+        'Education Administrator',
+        'School Counselor',
+        'Librarian',
+        'Special Education Teacher',
+        'Training Coordinator',
+        'Educational Consultant',
+        'Research Assistant'
+      ],
+      engineering: [
+        'Mechanical Engineer',
+        'Civil Engineer',
+        'Electrical Engineer',
+        'Chemical Engineer',
+        'Project Engineer',
+        'Design Engineer',
+        'Process Engineer',
+        'Quality Engineer',
+        'Manufacturing Engineer',
+        'Systems Engineer',
+        'Environmental Engineer',
+        'Structural Engineer'
+      ],
+      design: [
+        'Graphic Designer',
+        'UX Designer',
+        'UI Designer',
+        'Web Designer',
+        'Product Designer',
+        'Creative Director',
+        'Visual Designer',
+        'Motion Graphics Designer',
+        'Brand Designer',
+        'Interior Designer',
+        'Industrial Designer',
+        'Design Researcher'
+      ],
+      operations: [
+        'Operations Manager',
+        'Supply Chain Manager',
+        'Logistics Coordinator',
+        'Process Improvement Specialist',
+        'Operations Analyst',
+        'Warehouse Manager',
+        'Quality Assurance Manager',
+        'Operations Director',
+        'Production Manager',
+        'Inventory Manager',
+        'Facilities Manager',
+        'Operations Coordinator'
+      ],
+      management: [
+        'Project Manager',
+        'General Manager',
+        'Operations Manager',
+        'Team Lead',
+        'Department Manager',
+        'Program Manager',
+        'Vice President',
+        'Director',
+        'Executive Assistant',
+        'Chief Executive Officer',
+        'Chief Operating Officer',
+        'Regional Manager'
+      ],
+      other: [
+        'Administrative Assistant',
+        'Customer Service Representative',
+        'Human Resources Specialist',
+        'Legal Assistant',
+        'Consultant',
+        'Analyst',
+        'Coordinator',
+        'Specialist',
+        'Manager',
+        'Associate',
+        'Executive',
+        'Director'
+      ]
+    };
+
+    return titlesByIndustry[industry] || titlesByIndustry.other;
+  };
+
+  const jobTitleSuggestions = getJobTitleSuggestions(jobIndustry);
+
+  // Handle industry change and reset job title
+  const handleIndustryChange = (newIndustry) => {
+    setJobIndustry(newIndustry);
+    setJobTitle(''); // Reset job title when industry changes
+    setCustomJobTitle(''); // Reset custom job title
+    setShowCustomInput(false); // Hide custom input
+  };
+
+  // Handle job title change
+  const handleJobTitleChange = (value) => {
+    if (value === 'custom') {
+      setShowCustomInput(true);
+      setJobTitle('');
+    } else {
+      setShowCustomInput(false);
+      setJobTitle(value);
+      setCustomJobTitle('');
+    }
+  };
+
+  // Handle custom job title change
+  const handleCustomJobTitleChange = (value) => {
+    setCustomJobTitle(value);
+    setJobTitle(value);
   };
 
   const handleUpload = async () => {
@@ -213,52 +405,81 @@ const ResumeUpload = ({ onAnalysisComplete }) => {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Industry
           </label>
-          <select
-            value={jobIndustry}
-            onChange={(e) => setJobIndustry(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {industries.map(industry => (
-              <option key={industry.value} value={industry.value}>
-                {industry.label}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={jobIndustry}
+              onChange={(e) => handleIndustryChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none pr-10"
+            >
+              {industries.map(industry => (
+                <option key={industry.value} value={industry.value}>
+                  {industry.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Job Level
           </label>
-          <select
-            value={jobLevel}
-            onChange={(e) => setJobLevel(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {jobLevels.map(level => (
-              <option key={level.value} value={level.value}>
-                {level.label}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={jobLevel}
+              onChange={(e) => setJobLevel(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none pr-10"
+            >
+              {jobLevels.map(level => (
+                <option key={level.value} value={level.value}>
+                  {level.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Job Title *
           </label>
-          <input
-            type="text"
-            value={jobTitle}
-            onChange={(e) => setJobTitle(e.target.value)}
-            placeholder="e.g., Software Engineer"
-            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors ${
-              jobTitle.trim() 
-                ? 'border-gray-300 focus:ring-blue-500' 
-                : 'border-red-300 focus:ring-red-500 bg-red-50'
-            }`}
-            required
-          />
+          <div className="relative">
+            <select
+              value={showCustomInput ? 'custom' : jobTitle}
+              onChange={(e) => handleJobTitleChange(e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 transition-colors appearance-none pr-10 ${
+                jobTitle.trim() 
+                  ? 'border-gray-300 focus:ring-blue-500' 
+                  : 'border-red-300 focus:ring-red-500 bg-red-50'
+              }`}
+              required
+            >
+              <option value="">Select a job title...</option>
+              {jobTitleSuggestions.map((title, index) => (
+                <option key={index} value={title}>
+                  {title}
+                </option>
+              ))}
+              <option value="custom">Other (enter custom title)</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
+          
+          {showCustomInput && (
+            <div className="mt-2">
+              <input
+                type="text"
+                value={customJobTitle}
+                onChange={(e) => handleCustomJobTitleChange(e.target.value)}
+                placeholder="Enter your job title..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                autoFocus
+              />
+            </div>
+          )}
+          
           {!jobTitle.trim() && (
             <p className="text-xs text-red-600 mt-1">
               Job title is required to analyze your resume effectively

@@ -185,7 +185,7 @@ const ExpertAnalysisResults = ({ analysisData, resumeText = "" }) => {
         </div>
         <div className="flex items-center justify-center space-x-4">
           <div className="text-4xl font-bold text-gray-800">
-            {Math.round(analysisData.atsScore || analysisData.overallScore || 0)}/10
+            {Math.round(analysisData.atsScore || analysisData.overallScore || 0)}/100
           </div>
           <div className={`px-4 py-2 rounded-full text-lg font-semibold ${getGradeColor(analysisData.grade || 'C')}`}>
             Grade: {analysisData.grade || 'C'}
